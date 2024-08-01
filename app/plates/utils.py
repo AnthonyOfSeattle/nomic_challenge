@@ -2,6 +2,7 @@ import boto3
 import io
 import json
 import os
+import pandas as pd
 
 
 def get_s3_bucket():
@@ -27,3 +28,5 @@ def load_s3_object(s3_object):
 
         if s3_object.key.endswith("json"):
             return json.load(buff)
+        elif s3_object.key.endswith("csv"):
+            return pd.read_csv(buff, index_col=0)

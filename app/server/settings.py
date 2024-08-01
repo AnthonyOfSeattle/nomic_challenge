@@ -34,7 +34,6 @@ ALLOWED_HOSTS = environ.get("DJANGO_ALLOWED_HOSTS", default="*").split(" ")
 INSTALLED_APPS = [
     'plates',
     'rest_framework',
-    #'django_celery_results',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -137,5 +136,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Celery
 CELERY_BROKER_URL = environ.get('CELERY_BROKER')
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_RESULT_BACKEND = 'django-db'
+CELERY_RESULT_BACKEND = environ.get('CELERY_BROKER')
 CELERY_CACHE_BACKEND = 'django-cache'

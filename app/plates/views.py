@@ -1,5 +1,7 @@
+from time import sleep
 from plates.models import BeadPlate, Plate, Run
 from plates.serializers import BeadPlateSerializer, PlateSerializer, RunSerializer
+from plates.tasks import count_occurences_below_threshold
 from django.db import connection
 from django.http import Http404
 from django.utils import timezone
@@ -39,6 +41,9 @@ class PlateList(APIView):
         run_date_lt = request.GET.get("run_date_lt")
         return_data = request.GET.get("return_data", "true")
 
+        bead_count_threshold = request.GET.get("bead_count_threshold")
+        occurence_threshold = request.GET.get("occurence_threshold")
+
         # Query for plates
         plates = Plate.objects.all()
         if run_date_gt:
@@ -47,11 +52,40 @@ class PlateList(APIView):
         if run_date_lt:
             plates = plates.filter(run__date__lt=run_date_lt)
 
+        # Perform filtering based on count threshold
+        if bead_count_threshold and occurence_threshold:
+            async_results = [
+                count_occurences_below_threshold.delay(plate.name, int(bead_count_threshold))
+                for plate in plates
+            ]
+            while any([not result.ready() for result in async_results]):
+                sleep(1)
+
+            count_dict = {
+                entry.get()["plate_name"] : entry.get()["count"]
+                for entry in async_results
+            }
+            plates = plates.filter(
+                name__in=[
+                    name for name, count in count_dict.items()
+                    if count > int(occurence_threshold)
+                ]
+            )
+
         # Return count and records
         response = {"count": plates.count()}
         if return_data.lower() != "false":
             serializer = PlateSerializer(plates, many=True)
-            response["data"] = serializer.data
+            response["data"] = [
+                {
+                    **entry,
+                    **(
+                        {"counts_below_threshold": count_dict[entry["name"]]}
+                        if entry["name"] in count_dict else {}
+                    )
+                }
+                for entry in serializer.data
+            ]
 
         return Response(response)
 
