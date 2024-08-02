@@ -165,6 +165,8 @@ class AnalysisResultDetail(APIView):
             )
         )
         cali_plate_data = load_s3_object(s3_objects[0])
+        cali_plate_data["plate"] = cali_plate_name
+        cali_plate_data["well"] = cali_plate_data.index
 
         # Load sample plates
         sample_plate_data = []
@@ -175,7 +177,10 @@ class AnalysisResultDetail(APIView):
                     Prefix=f"DecodingResults/{sample_plate_name}/signal.csv"
                 )
             )
-            sample_plate_data.append(load_s3_object(s3_objects[0]))
+            cur_sample_plate_data = load_s3_object(s3_objects[0])
+            cur_sample_plate_data["plate"] = sample_plate_name
+            cur_sample_plate_data["well"] = cur_sample_plate_data.index
+            sample_plate_data.append(cur_sample_plate_data)
         
         sample_plate_data = pd.concat(sample_plate_data, axis=0)
         sample_plate_data = sample_plate_data.reset_index().drop("index", axis=1)
