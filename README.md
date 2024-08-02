@@ -63,7 +63,7 @@ Each of the above endpoints returns a data package with the following schema:
 }
 ```
 
-You may toggle the return of data using the `return_data=false` query parameter:
+You may toggle the return of data using the `return_data=false` query parameter on each url:
 
 ```
 # In browser
@@ -71,4 +71,22 @@ http://localhost:8000/api/plates/?return_data=false
 
 # In python
 requests.get("http://localhost:8000/api/runs/", params={"return_data": "false"})
+```
+
+### 3. Performing plate queries
+
+A major aspect of this assignment was performing more specific queries on plates.
+This can be accomplished by passing query parameters to the '/api/plates/` endpoint.
+
+For example, in order to get the plates between certain date ranges, you may pass the `run_date_gt` and `run_date_lt` params:
+
+```
+http://localhost:8000/api/plates/?run_date_lt=2023-11-01T00:00:00.00Z&run_date_gt=2023-09-01T00:00:00.00Z
+```
+
+If you want to find the plates with more than X occurences of beads bellow a Y threshold, use the `bead_count_threshold` and `occurence_threshold` params.
+The following finds any plates with bead counts below 5 in the date range from the previous query:
+
+```
+http://localhost:8000/api/plates/?run_date_lt=2023-11-01T00:00:00.00Z&run_date_gt=2023-09-01T00:00:00.00Z&bead_count_threshold=5&occurence_threshold=0
 ```
