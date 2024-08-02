@@ -1,7 +1,7 @@
 from time import sleep
 from plates.models import BeadPlate, Plate, Run
 from plates.serializers import BeadPlateSerializer, PlateSerializer, RunSerializer
-from plates.tasks import count_occurences_below_threshold
+from plates.tasks import count_occurences_below_threshold, get_calimetrics
 from django.db import connection
 from django.http import Http404
 from django.utils import timezone
@@ -53,6 +53,7 @@ class PlateList(APIView):
             plates = plates.filter(run__date__lt=run_date_lt)
 
         # Perform filtering based on count threshold
+        count_dict = {}
         if bead_count_threshold and occurence_threshold:
             async_results = [
                 count_occurences_below_threshold.delay(plate.name, int(bead_count_threshold))
@@ -117,7 +118,7 @@ class RunList(APIView):
 
 
 @api_view(["GET"])
-def plate_report(request):
+def get_plate_report(request):
     """
     Generate report of number of plates ran
 
@@ -146,3 +147,29 @@ def plate_report(request):
 
     return Response(response)
 
+@api_view(["GET"])
+def get_calimetrics_list(request):
+    """
+    Generate report of number of plates ran
+    """
+    
+    # Get parameters from request
+    return_discrepency = request.GET.get("return_discrepency", False)
+
+    # Get Caliplates
+    plates = Plate.objects.filter(is_cali=True)
+
+    # Get calidata async
+    async_results = [
+        get_calimetrics.delay(plate.name, return_discrepency)
+        for plate in plates
+    ]
+    while any([not result.ready() for result in async_results]):
+        sleep(1)
+
+    data = [result.get() for result in async_results]
+    data = [
+        entry for entry in data
+        if not return_discrepency or entry["calimetrics"]
+    ]
+    return Response({"count": len(data), "data": data})
