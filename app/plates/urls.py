@@ -10,6 +10,7 @@ urlpatterns = [
     path("calimetrics/", views.get_calimetrics_list),
     path("analysis_results/", views.AnalysisResultList.as_view()),
     path('analysis_results/<int:pk>/', views.AnalysisResultDetail.as_view()),
+    path('analysis_results/<int:pk>/<str:field>/', views.AnalysisResultDetail.as_view())
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

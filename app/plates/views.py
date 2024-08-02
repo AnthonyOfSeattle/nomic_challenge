@@ -6,7 +6,7 @@ from plates.serializers import AnalysisResultSerializer, BeadPlateSerializer, Pl
 from plates.tasks import count_occurences_below_threshold, get_calimetrics
 from plates.utils import get_s3_bucket, load_s3_object
 from django.db import connection
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 
 from rest_framework import status
@@ -148,7 +148,7 @@ class AnalysisResultDetail(APIView):
         except Search.DoesNotExist:
             raise Http404
 
-    def get(self, request, pk, format=None):
+    def get(self, request, pk, field=None, format=None):
         """Return a single analysis result by id"""
         s3_bucket = get_s3_bucket()
 
@@ -184,6 +184,18 @@ class AnalysisResultDetail(APIView):
         
         sample_plate_data = pd.concat(sample_plate_data, axis=0)
         sample_plate_data = sample_plate_data.reset_index().drop("index", axis=1)
+
+        if field is not None:
+            file_path = f"/tmp/analysis_result_{analysis_result.pk}.csv"
+            if field == "cali_plate":
+                cali_plate_data.to_csv(file_path, index=False)
+            elif field == "sample_plates":
+                sample_plate_data.to_csv(file_path, index=False)
+            else:
+                raise Http404
+
+            with open(file_path, "rb") as fh:
+                return HttpResponse(fh.read())
 
         return Response({
             "data" : {
