@@ -109,3 +109,47 @@ You can add the `return_discrepency=true` query parameter to just look for metri
 ```
 http://localhost:8000/api/calimetrics/?return_discrepency=true
 ```
+
+### 4. Creating Analysis Results
+
+If you want to wrap serveral plates together, you can create analysis results objects. I usually do these POST requests via python.
+Currently, the POST request will take the database IDs as input. Let's wrap up plate 3 and 4 with the cali plate 2.
+
+```
+import requests
+
+response = requests.post(
+    "http://localhost:8000/api/analysis_results/",
+    data = {
+        "cali_plate": 2,
+        "sample_plates": [3, 4]
+    }
+)
+response.json()
+```
+
+You can then download this data using a get request:
+
+```
+response = requests.get("http://localhost:8000/api/analysis_results/1")
+data = response.json()
+```
+
+The data object has the schema:
+
+```
+{
+    "data": {
+        "cali_plate": Dict[Dict]
+        "sample_plates": Dict[Dict]
+    }
+} 
+```
+
+Each of `cali_plate` and `sample_plates` were exported directly from dataframes and thus can be put right back into one:
+
+```
+import pandas as pd
+
+df = pd.DataFrame(data["data"]["cali_plate"])
+```
