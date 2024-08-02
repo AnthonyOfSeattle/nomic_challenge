@@ -153,3 +153,11 @@ import pandas as pd
 
 df = pd.DataFrame(data["data"]["cali_plate"])
 ```
+
+If you want a raw CSV of either set of data, feel free to use the following urls in the browser:
+
+```
+http://localhost:8000/api/analysis_results/1/cali_plate/
+or
+http://localhost:8000/api/analysis_results/1/sample_plates/
+```
