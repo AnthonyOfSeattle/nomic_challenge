@@ -44,3 +44,11 @@ class Plate(models.Model):
     def __str__(self):
         return f"Plate('{self.id}', is_cali={self.is_cali})"
 
+
+class AnalysisResult(models.Model):
+    """Model to store AnalysisResult linkages"""
+    cali_plate = models.ForeignKey(Plate,
+                                   related_name='calibrates_results',
+                                   null=True,
+                                   on_delete=models.SET_NULL)
+    sample_plates = models.ManyToManyField(Plate, related_name='results')

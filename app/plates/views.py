@@ -1,15 +1,18 @@
+import pandas as pd
+
 from time import sleep
-from plates.models import BeadPlate, Plate, Run
-from plates.serializers import BeadPlateSerializer, PlateSerializer, RunSerializer
+from plates.models import AnalysisResult, BeadPlate, Plate, Run
+from plates.serializers import AnalysisResultSerializer, BeadPlateSerializer, PlateSerializer, RunSerializer
 from plates.tasks import count_occurences_below_threshold, get_calimetrics
+from plates.utils import get_s3_bucket, load_s3_object
 from django.db import connection
 from django.http import Http404
 from django.utils import timezone
 
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 
 class BeadPlateList(APIView):
     """List all BeadPlates"""
@@ -115,6 +118,74 @@ class RunList(APIView):
             response["data"] = serializer.data
 
         return Response(response)
+
+
+class AnalysisResultList(APIView):
+    """List all analysis results"""
+
+    def get(self, request, format=None):
+        analysis_results = AnalysisResult.objects.all()
+        serializer = AnalysisResultSerializer(analysis_results, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        """Register new analysis results with backend"""
+        serializer = AnalysisResultSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+
+class AnalysisResultDetail(APIView):
+    """Retrieve an analysis result"""
+
+    def get_object(self, pk):
+        """Use primary leys to look up search"""
+        try:
+            return AnalysisResult.objects.get(pk=pk)
+        except Search.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        """Return a single analysis result by id"""
+        s3_bucket = get_s3_bucket()
+
+        try:
+            analysis_result = AnalysisResult.objects.get(pk=pk)
+        except Search.DoesNotExist:
+            raise Http404
+
+        # Load caliplate
+        cali_plate_name = analysis_result.cali_plate.name
+        s3_objects = list(
+            s3_bucket.objects.filter(
+                Prefix=f"DecodingResults/{cali_plate_name}/signal.csv"
+            )
+        )
+        cali_plate_data = load_s3_object(s3_objects[0])
+
+        # Load sample plates
+        sample_plate_data = []
+        for sample_plate in analysis_result.sample_plates.all():
+            sample_plate_name = sample_plate.name
+            s3_objects = list(
+                s3_bucket.objects.filter(
+                    Prefix=f"DecodingResults/{sample_plate_name}/signal.csv"
+                )
+            )
+            sample_plate_data.append(load_s3_object(s3_objects[0]))
+        
+        sample_plate_data = pd.concat(sample_plate_data, axis=0)
+        sample_plate_data = sample_plate_data.reset_index().drop("index", axis=1)
+
+        return Response({
+            "data" : {
+                "cali_plate": cali_plate_data.to_dict(),
+                "sample_plates": sample_plate_data.to_dict()
+            }
+        })
 
 
 @api_view(["GET"])

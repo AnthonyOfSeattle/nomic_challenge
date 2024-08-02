@@ -1,6 +1,6 @@
 from re import search
 from rest_framework import serializers
-from plates.models import BeadPlate, Plate, Run
+from plates.models import AnalysisResult, BeadPlate, Plate, Run
 
 
 class BeadPlateSerializer(serializers.ModelSerializer):
@@ -12,7 +12,7 @@ class BeadPlateSerializer(serializers.ModelSerializer):
 
 
 class PlateSerializer(serializers.ModelSerializer):
-    """Serializer for a BeadPlate object"""
+    """Serializer for a Plate object"""
 
     class Meta:
         model = Plate
@@ -20,9 +20,16 @@ class PlateSerializer(serializers.ModelSerializer):
 
 
 class RunSerializer(serializers.ModelSerializer):
-    """Serializer for a BeadPlate object"""
+    """Serializer for a Run object"""
 
     class Meta:
         model = Run
         fields = ["id", "nel_id", "date"]
 
+
+class AnalysisResultSerializer(serializers.ModelSerializer):
+    """Serializer for am AnalysisResult object"""
+
+    class Meta:
+        model = AnalysisResult
+        fields = ["id", "cali_plate", "sample_plates"]
