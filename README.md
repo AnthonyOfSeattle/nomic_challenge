@@ -53,3 +53,22 @@ pprint(
     response.json()
 )
 ```
+
+Each of the above endpoints returns a data package with the following schema:
+
+```
+{
+    "count": int,
+    "data": List[Dict]
+}
+```
+
+You may toggle the return of data using the `return_data=false` query parameter:
+
+```
+# In browser
+http://localhost:8000/api/plates/?return_data=false
+
+# In python
+requests.get("http://localhost:8000/api/runs/", params={"return_data": "false"})
+```
