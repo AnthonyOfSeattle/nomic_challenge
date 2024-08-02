@@ -90,3 +90,22 @@ The following finds any plates with bead counts below 5 in the date range from t
 ```
 http://localhost:8000/api/plates/?run_date_lt=2023-11-01T00:00:00.00Z&run_date_gt=2023-09-01T00:00:00.00Z&bead_count_threshold=5&occurence_threshold=0
 ```
+
+You can generate a month by month count report by performing a get operation on the following URL.
+Internally, this is implemented as a propper SQL query, so it should be rather performant.
+
+```
+http://localhost:8000/api/plates/report/
+```
+
+A special case of plate based queries arises for calimetrics. A basic query for a list of calimetrics can be performed with:
+
+```
+http://localhost:8000/api/plates/report/
+```
+
+You can add the `return_discrepency=true` query parameter to just look for metrics that differ by at least 2:
+
+```
+http://localhost:8000/api/calimetrics/?return_discrepency=true
+```
